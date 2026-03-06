@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Selekt — Settings</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 48px 16px;
+    }
+    .container {
+      width: 100%;
+      max-width: 480px;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #cdd6f4;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #6c7086;
+      margin-bottom: 32px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #a6adc8;
+      margin-bottom: 6px;
+      margin-top: 20px;
+    }
+    label:first-of-type { margin-top: 0; }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 10px 12px;
+      background: #313244;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      color: #cdd6f4;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus {
+      border-color: #89b4fa;
+    }
+    .hint {
+      font-size: 12px;
+      color: #585b70;
+      margin-top: 4px;
+    }
+    button {
+      margin-top: 28px;
+      padding: 10px 24px;
+      background: #89b4fa;
+      color: #1e1e2e;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover { background: #74c7ec; }
+    .toast {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #a6e3a1;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⚡ Selekt</h1>
+    <p class="subtitle">Configure your AI backend for text explanations.</p>
+
+    <label for="endpoint">API Endpoint</label>
+    <input type="text" id="endpoint" placeholder="https://api.openai.com/v1/chat/completions" />
+    <p class="hint">OpenAI-compatible chat completions endpoint</p>
+
+    <label for="apikey">API Key</label>
+    <input type="password" id="apikey" placeholder="sk-..." />
+
+    <label for="model">Model</label>
+    <input type="text" id="model" placeholder="gpt-4o-mini" />
+    <p class="hint">Any model supported by your endpoint</p>
+
+    <button id="save">Save</button>
+    <p class="toast" id="toast">✓ Settings saved</p>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
