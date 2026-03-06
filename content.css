@@ -1,6 +1,6 @@
 /* ===== Selekt Toolbar ===== */
 #selekt-toolbar {
-  position: absolute;
+  position: fixed;
   z-index: 2147483647;
   display: flex;
   align-items: center;
@@ -59,7 +59,7 @@
 
 /* ===== Selekt Result Panel ===== */
 #selekt-panel {
-  position: absolute;
+  position: fixed;
   z-index: 2147483647;
   width: 380px;
   max-height: 320px;

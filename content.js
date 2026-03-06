@@ -87,19 +87,19 @@
       toolbar.appendChild(el);
     });
 
-    // Position: above the selection, centered
+    // Position: above the selection, centered (fixed positioning = viewport coords)
     document.body.appendChild(toolbar);
-    const rect = toolbar.getBoundingClientRect();
-    let left = x - rect.width / 2;
-    let top = y - rect.height - 10;
+    const tbRect = toolbar.getBoundingClientRect();
+    let left = x - tbRect.width / 2;
+    let top = y - tbRect.height - 10;
 
     // Keep within viewport
     if (left < 8) left = 8;
-    if (left + rect.width > window.innerWidth - 8) left = window.innerWidth - rect.width - 8;
+    if (left + tbRect.width > window.innerWidth - 8) left = window.innerWidth - tbRect.width - 8;
     if (top < 8) top = y + 24; // flip below if no room above
 
-    toolbar.style.left = `${left + window.scrollX}px`;
-    toolbar.style.top = `${top + window.scrollY}px`;
+    toolbar.style.left = `${left}px`;
+    toolbar.style.top = `${top}px`;
   }
 
   /* ---------- Result Panel ---------- */
@@ -131,15 +131,16 @@
     panel.append(header, body);
     document.body.appendChild(panel);
 
-    // Position below toolbar or near selection
+    // Position below toolbar or near selection (fixed = viewport coords)
     const panelRect = panel.getBoundingClientRect();
     let left = x - panelRect.width / 2;
     let top = y + 8;
     if (left < 8) left = 8;
     if (left + panelRect.width > window.innerWidth - 8) left = window.innerWidth - panelRect.width - 8;
+    if (top + panelRect.height > window.innerHeight - 8) top = y - panelRect.height - 8; // flip above
 
-    panel.style.left = `${left + window.scrollX}px`;
-    panel.style.top = `${top + window.scrollY}px`;
+    panel.style.left = `${left}px`;
+    panel.style.top = `${top}px`;
 
     return body;
   }
