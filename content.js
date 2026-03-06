@@ -168,7 +168,7 @@
     }
   }
 
-  /* ---------- LLM Call ---------- */
+  /* ---------- LLM Call (via background worker to avoid CORS) ---------- */
   async function callLLM(action, text, context) {
     // Read settings from storage
     const settings = await new Promise((resolve) => {
@@ -186,33 +186,29 @@
 
     const userPrompt = `Selected text:\n"""${text}"""\n\nSurrounding context:\n"""${context}"""\n\nPlease explain the selected text clearly and concisely.`;
 
-    const resp = await fetch(settings.apiEndpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${settings.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: settings.model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        max_tokens: 1024,
-        temperature: 0.4,
-      }),
+    const resp = await new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage(
+        {
+          type: "selekt-llm-request",
+          apiEndpoint: settings.apiEndpoint,
+          apiKey: settings.apiKey,
+          model: settings.model,
+          systemPrompt,
+          userPrompt,
+        },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else if (response.error) {
+            reject(new Error(response.error));
+          } else {
+            resolve(response.content);
+          }
+        }
+      );
     });
 
-    if (!resp.ok) {
-      const errBody = await resp.text();
-      throw new Error(`API ${resp.status}: ${errBody.slice(0, 200)}`);
-    }
-
-    const data = await resp.json();
-    return (
-      data.choices?.[0]?.message?.content?.trim() ||
-      "No response from model."
-    );
+    return resp;
   }
 
   /* ---------- Selection Listener ---------- */
