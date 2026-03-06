@@ -13,11 +13,9 @@
     if (!sel || sel.rangeCount === 0) return "";
     const range = sel.getRangeAt(0);
 
-    // Walk up to find a reasonable container (article, section, or body)
     let container = range.commonAncestorContainer;
     if (container.nodeType === Node.TEXT_NODE) container = container.parentElement;
 
-    // Try to find a semantic container
     const semanticTags = ["ARTICLE", "SECTION", "MAIN", "BLOCKQUOTE", "DIV"];
     let ctx = container;
     for (let i = 0; i < 6 && ctx && ctx !== document.body; i++) {
@@ -28,7 +26,6 @@
 
     let text = (ctx.innerText || ctx.textContent || "").trim();
     if (text.length > maxChars) {
-      // Center the context around the selection
       const selText = sel.toString().trim();
       const idx = text.indexOf(selText);
       if (idx !== -1) {
@@ -78,25 +75,29 @@
         el.style.opacity = "0.4";
         el.style.cursor = "default";
       }
-      el.addEventListener("mousedown", (e) => {
+      // Use click for normal tap behavior
+      el.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
         if (!btn.enabled) return;
         handleAction(btn.id);
       });
+      // Prevent mousedown from clearing selection or dismissing toolbar
+      el.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
       toolbar.appendChild(el);
     });
 
-    // Position: above the selection, centered (fixed positioning = viewport coords)
     document.body.appendChild(toolbar);
     const tbRect = toolbar.getBoundingClientRect();
     let left = x - tbRect.width / 2;
     let top = y - tbRect.height - 10;
 
-    // Keep within viewport
     if (left < 8) left = 8;
     if (left + tbRect.width > window.innerWidth - 8) left = window.innerWidth - tbRect.width - 8;
-    if (top < 8) top = y + 24; // flip below if no room above
+    if (top < 8) top = y + 24;
 
     toolbar.style.left = `${left}px`;
     toolbar.style.top = `${top}px`;
@@ -108,6 +109,9 @@
 
     panel = document.createElement("div");
     panel.id = "selekt-panel";
+
+    // Prevent panel clicks from bubbling to the dismiss handler
+    panel.addEventListener("mousedown", (e) => e.stopPropagation());
 
     const header = document.createElement("div");
     header.className = "selekt-panel-header";
@@ -131,13 +135,12 @@
     panel.append(header, body);
     document.body.appendChild(panel);
 
-    // Position below toolbar or near selection (fixed = viewport coords)
     const panelRect = panel.getBoundingClientRect();
     let left = x - panelRect.width / 2;
     let top = y + 8;
     if (left < 8) left = 8;
     if (left + panelRect.width > window.innerWidth - 8) left = window.innerWidth - panelRect.width - 8;
-    if (top + panelRect.height > window.innerHeight - 8) top = y - panelRect.height - 8; // flip above
+    if (top + panelRect.height > window.innerHeight - 8) top = y - panelRect.height - 8;
 
     panel.style.left = `${left}px`;
     panel.style.top = `${top}px`;
@@ -147,10 +150,10 @@
 
   /* ---------- Actions ---------- */
   async function handleAction(action) {
-    if (action !== "explain") return; // Only explain is implemented for now
+    if (action !== "explain") return;
 
     const sel = window.getSelection();
-    if (!sel) return;
+    if (!sel || sel.rangeCount === 0) return;
     const rect = sel.getRangeAt(0).getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.bottom;
@@ -170,7 +173,6 @@
 
   /* ---------- LLM Call (via background worker to avoid CORS) ---------- */
   async function callLLM(action, text, context) {
-    // Read settings from storage
     const settings = await new Promise((resolve) => {
       chrome.storage.sync.get(
         { apiEndpoint: "", apiKey: "", model: "gpt-4o-mini" },
@@ -186,11 +188,17 @@
 
     const userPrompt = `Selected text:\n"""${text}"""\n\nSurrounding context:\n"""${context}"""\n\nPlease explain the selected text clearly and concisely.`;
 
+    // Normalize endpoint: append /chat/completions if not already present
+    let endpoint = settings.apiEndpoint.replace(/\/+$/, "");
+    if (!endpoint.endsWith("/chat/completions")) {
+      endpoint += "/chat/completions";
+    }
+
     const resp = await new Promise((resolve, reject) => {
       chrome.runtime.sendMessage(
         {
           type: "selekt-llm-request",
-          apiEndpoint: settings.apiEndpoint,
+          apiEndpoint: endpoint,
           apiKey: settings.apiKey,
           model: settings.model,
           systemPrompt,
@@ -213,10 +221,8 @@
 
   /* ---------- Selection Listener ---------- */
   document.addEventListener("mouseup", (e) => {
-    // Ignore clicks on our own UI
     if (e.target.closest("#selekt-toolbar") || e.target.closest("#selekt-panel")) return;
 
-    // Small delay to let browser finalize the selection
     setTimeout(() => {
       const sel = window.getSelection();
       const text = sel?.toString().trim();
@@ -238,15 +244,13 @@
     }, 10);
   });
 
-  // Dismiss on click outside
+  // Dismiss on click outside — only dismiss elements not clicked on
   document.addEventListener("mousedown", (e) => {
-    if (e.target.closest("#selekt-toolbar") || e.target.closest("#selekt-panel")) return;
-    // Don't remove if user is starting a new selection
-    if (!e.target.closest("#selekt-toolbar")) {
-      removeToolbar();
-    }
-    if (!e.target.closest("#selekt-panel")) {
-      removePanel();
+    const onToolbar = e.target.closest("#selekt-toolbar");
+    const onPanel = e.target.closest("#selekt-panel");
+
+    if (!onToolbar && !onPanel) {
+      removeAll();
     }
   });
 
